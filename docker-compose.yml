@@ -1,0 +1,42 @@
+# Local stack for developing the backend: MariaDB + phpMyAdmin + the API.
+# The fusion server and frontend run from their own repos.
+services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: devroot
+      MARIADB_DATABASE: hcdmap
+      MARIADB_USER: hcdmap
+      MARIADB_PASSWORD: hcdmap
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    environment:
+      PMA_HOST: mariadb
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8080:80"
+    depends_on:
+      - mariadb
+
+  backend:
+    build: .
+    command: sh -c "alembic upgrade head && python -m hcdmap_backend"
+    environment:
+      HCDMAP_DB_URL: mysql+pymysql://hcdmap:hcdmap@mariadb:3306/hcdmap
+      HCDMAP_MQTT_HOST: host.docker.internal
+      HCDMAP_STORE_ID: store-001
+      HCDMAP_SERVICE_TOKEN: dev-service-token
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mariadb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  mariadb-data:

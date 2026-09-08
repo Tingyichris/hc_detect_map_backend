@@ -1,0 +1,11 @@
+# Reference only — backend reads settings from env vars (HCDMAP_*) via pydantic-settings.
+# Copy relevant values into your shell / compose environment.
+
+HCDMAP_DB_URL = "mysql+pymysql://hcdmap:hcdmap@localhost:3306/hcdmap"
+HCDMAP_STORE_ID = "store-001"
+HCDMAP_MQTT_HOST = "localhost"
+HCDMAP_MQTT_PORT = "1883"
+HCDMAP_SERVICE_TOKEN = "dev-service-token"        # fusion server -> backend ingest auth
+HCDMAP_JWT_SECRET = "dev-jwt-secret-change-me"
+HCDMAP_FLOORPLAN_DIR = "data/floorplans"
+HCDMAP_CORS_ORIGINS = "http://localhost:5173"
