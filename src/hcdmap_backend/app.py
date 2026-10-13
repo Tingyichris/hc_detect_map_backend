@@ -8,6 +8,7 @@ from .api import (
     cameras,
     classes,
     corrections,
+    floorplans,
     health,
     ingest,
     maps,
@@ -27,6 +28,7 @@ ROUTERS = (
     anomalies.router,
     review.router,
     corrections.router,
+    floorplans.router,
     health.router,
 )
 
