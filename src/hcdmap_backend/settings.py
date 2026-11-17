@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     service_token: str = "dev-service-token"
     jwt_secret: str = "dev-jwt-secret-change-me"
     floorplan_dir: str = "data/floorplans"
+    camera_snapshot_dir: str = "data/camera-snapshots"
     cors_origins: str = "http://localhost:5173"
 
     @property

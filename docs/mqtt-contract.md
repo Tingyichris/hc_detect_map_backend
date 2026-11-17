@@ -16,8 +16,8 @@ Contract version: **1**
 
 | Topic | QoS | Retain | Publisher |
 |-------|-----|--------|-----------|
-| `sushi/<store_id>/events/<camera_id>` | 1 | no  | Pi — plate lifecycle events |
-| `sushi/<store_id>/status/<camera_id>` | 1 | yes | Pi — camera liveness (+ LWT) |
+| `sushi/<pi_id>/events/<camera_id>` | 1 | no  | Pi — plate lifecycle events |
+| `sushi/<pi_id>/status/<camera_id>` | 1 | yes | Pi — camera liveness (+ LWT) |
 | `sushi/<store_id>/belt/speed`         | 0 | yes | optional — PLC/encoder feed |
 | `sushi/<store_id>/config/map`          | 1 | yes | backend — map-reload signal |
 

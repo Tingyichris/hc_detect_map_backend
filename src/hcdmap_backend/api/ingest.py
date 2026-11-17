@@ -1,12 +1,18 @@
 """server -> backend result feed. Every handler is idempotent: upsert on `event_id`."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from datetime import UTC, datetime
+
+import hashlib
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import Anomaly, Camera, PickupEvent
 from ..schemas import AnomalyIn, CameraStatusIn, CheckpointCrossingsIn, PickupIn
+from ..settings import settings
 from ..sessions.lifecycle import attach_to_open_session
 from .deps import get_db, require_service_token
 
@@ -56,9 +62,11 @@ def ingest_camera_status(body: CameraStatusIn, db: Session = Depends(get_db)) ->
     if cam is None:
         cam = Camera(id=body.camera_id, store_id=body.store_id)
         db.add(cam)
+    if "/" in body.camera_id:
+        cam.pi_id, cam.local_camera_id = body.camera_id.split("/", 1)
     cam.state = body.state
     cam.last_reason = body.reason
-    # last_seen_at / rollups: TODO update from ts
+    cam.last_seen_at = datetime.fromtimestamp(body.ts, UTC).replace(tzinfo=None)
     return {"status": "ok"}
 
 
@@ -66,3 +74,27 @@ def ingest_camera_status(body: CameraStatusIn, db: Session = Depends(get_db)) ->
 def ingest_crossings(body: CheckpointCrossingsIn) -> dict:
     # Optional audit stream. TODO: persist to a rolling table or drop if not needed.
     return {"status": "ok", "count": len(body.crossings)}
+
+
+@router.post("/camera-snapshot")
+async def ingest_camera_snapshot(
+    request: Request, source_id: str = Query(...), db: Session = Depends(get_db)
+) -> dict:
+    payload = await request.body()
+    if not payload or len(payload) > 5 * 1024 * 1024:
+        raise HTTPException(413, "snapshot must be a JPEG up to 5 MB")
+    row = db.get(Camera, source_id)
+    if row is None:
+        pi_id, separator, camera_id = source_id.partition("/")
+        if not separator:
+            raise HTTPException(400, "source_id must be pi_id/camera_id")
+        row = Camera(id=source_id, store_id=settings.store_id,
+                     pi_id=pi_id, local_camera_id=camera_id)
+        db.add(row)
+    root = Path(settings.camera_snapshot_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    destination = root / f"{hashlib.sha256(source_id.encode()).hexdigest()[:24]}.jpg"
+    destination.write_bytes(payload)
+    row.snapshot_path = str(destination)
+    row.snapshot_updated_at = datetime.now(UTC).replace(tzinfo=None)
+    return {"status": "ok", "source_id": source_id}
