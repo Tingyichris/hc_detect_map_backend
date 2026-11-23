@@ -10,6 +10,15 @@ from ..settings import settings
 log = logging.getLogger(__name__)
 
 
+def _auth() -> dict[str, str] | None:
+    if not settings.mqtt_username:
+        return None
+    return {
+        "username": settings.mqtt_username,
+        "password": settings.mqtt_password,
+    }
+
+
 def publish_map_signal(store_id: str, map_version: int) -> None:
     payload = json.dumps({"v": 1, "map_version": map_version, "ts": time.time()})
     topic = f"sushi/{store_id}/config/map"
@@ -21,6 +30,7 @@ def publish_map_signal(store_id: str, map_version: int) -> None:
             payload=payload,
             hostname=settings.mqtt_host,
             port=settings.mqtt_port,
+            auth=_auth(),
             qos=1,
             retain=True,
         )
@@ -34,7 +44,25 @@ def publish_camera_aoi(pi_id: str, camera_id: str, points: list[list[float]]) ->
     payload = json.dumps({"points": points, "ts": time.time()}, separators=(",", ":"))
     try:
         import paho.mqtt.publish as publish
-        publish.single(topic, payload=payload, hostname=settings.mqtt_host,
-                       port=settings.mqtt_port, qos=1, retain=True)
+        publish.single(
+            topic,
+            payload=payload,
+            hostname=settings.mqtt_host,
+            port=settings.mqtt_port,
+            auth=_auth(),
+            qos=1,
+            retain=True,
+        )
     except Exception as e:  # noqa: BLE001
         log.warning("could not publish camera AOI: %s", e)
+
+
+def publish_camera_screenshot_request(pi_id: str, camera_id: str, request_id: str) -> None:
+    topic = f"sushi/{pi_id}/commands/{camera_id}/screenshot"
+    payload = json.dumps({"request_id": request_id, "ts": time.time()}, separators=(",", ":"))
+    try:
+        import paho.mqtt.publish as publish
+        publish.single(topic, payload=payload, hostname=settings.mqtt_host,
+                       port=settings.mqtt_port, auth=_auth(), qos=1, retain=False)
+    except Exception as e:  # noqa: BLE001
+        log.warning("could not publish camera screenshot request: %s", e)
