@@ -13,7 +13,9 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 if os.environ.get("HCDMAP_DB_URL"):
-    config.set_main_option("sqlalchemy.url", os.environ["HCDMAP_DB_URL"])
+    # ConfigParser treats percent signs in URL-encoded credentials as interpolation.
+    # Escape them for Alembic; SQLAlchemy receives the original single-percent URL.
+    config.set_main_option("sqlalchemy.url", os.environ["HCDMAP_DB_URL"].replace("%", "%%"))
 
 target_metadata = Base.metadata
 

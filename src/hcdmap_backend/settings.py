@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     store_id: str = "store-001"
     mqtt_host: str = "localhost"
     mqtt_port: int = 1883
+    mqtt_username: str = ""
+    mqtt_password: str = ""
+    http_host: str = "0.0.0.0"
+    http_port: int = 8000
     service_token: str = "dev-service-token"
     jwt_secret: str = "dev-jwt-secret-change-me"
     floorplan_dir: str = "data/floorplans"
